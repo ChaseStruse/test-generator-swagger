@@ -1,16 +1,7 @@
 import json
 from string import Template
-
-template = """import requests
-
-
-def test_${test_case_name}_returns_200_given_valid_data():
-    url = f"${base_url}/${path}"
-    expected = 200
-    actual = requests.get(url)
-    assert actual.status_code == expected
-
-"""
+from services.get_calls_service import (create_get_paths_subbing_in_test_data_for_vars, get_test_get_calls_template,
+                                        create_template_data_based_on_values_passed, write_to_template_file)
 
 
 def get_swagger_doc():
@@ -61,35 +52,15 @@ def parse_dict(swagger_dictionary_data):
     }
 
 
-def create_get_paths_subbing_in_test_data_for_vars(get_calls, test_data):
-    paths = []
-    for path in get_calls.keys():
-        finished_path = ""
-        split_path = path.split("/")
-        split_path.pop(0)
-        for part_path in split_path:
-            if '{' in part_path:
-                part_path = test_data[part_path[1:-1]]
-                finished_path += str(part_path) + "/"
-            else:
-                finished_path += str(part_path) + "/"
 
-        paths.append(finished_path)
-
-    return paths
 
 
 if __name__ == '__main__':
     swagger_dict = get_swagger_doc()
     data = parse_dict(swagger_dict)
     paths = create_get_paths_subbing_in_test_data_for_vars(data['get'], {"petId": "1", "orderId": "1", "username": "testUser"})
-    temp_data = {
-        "test_case_name": "please_work",
-        "base_url": "petstore.swagger.io/v2",
-        "path": paths[1]
-    }
-    template_obj = Template(template)
-    generated = template_obj.substitute(temp_data)
-    with open("test.py", "w") as f:
-        f.write(generated)
+
+    template_obj = get_test_get_calls_template()
+    temp_data = create_template_data_based_on_values_passed("petstore.swagger.io/v2", paths)
+    write_to_template_file(template_obj, temp_data)
 
